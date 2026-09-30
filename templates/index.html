@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Analytics & Performance Indicator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Model Viewer Library -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <style>
+        /* Loading Screen Overlay Styles */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #0b0f19;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.5s ease-out;
+        }
+        #loading-screen video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Video Screen -->
+    <div id="loading-screen">
+        <video id="intro-video" autoplay muted playsinline>
+            <source src="{{ url_for('static', filename='loading.mp4') }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <!-- 3D World Cup Trophy Background Model -->
+    <model-viewer src="{{ url_for('static', filename='fifa_world_cup.glb') }}" 
+                  camera-controls 
+                  auto-rotate 
+                  rotation-per-second="10deg"
+                  camera-orbit="0deg 75deg 20m"
+                  shadow-intensity="1"
+                  style="position: fixed; top: 0; right: 0; width: 45vw; height: 100vh; z-index: -1; transform: scale(0.90); transform-origin: center;">
+    </model-viewer>
+    
+    <!-- Header & Navigation -->
+    <header>
+        <h1><a href="/" style="text-decoration: none; background: linear-gradient(135deg, var(--gold-light), var(--gold-primary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">PLAYER PERFORMANCE INDICATOR</a></h1>
+        <nav>
+            <ul>
+                <li><a href="/" class="{{ 'active' if active_tab == 'home' else '' }}">Home</a></li>
+                <li><a href="/description" class="{{ 'active' if active_tab == 'description' else '' }}">Player Profile</a></li>
+                <li><a href="/comparison" class="{{ 'active' if active_tab == 'comparison' else '' }}">Comparison</a></li>
+                <li><a href="/replacement" class="{{ 'active' if active_tab == 'replacement' else '' }}">Replacements</a></li>
+                <li><a href="/predict" class="{{ 'active' if active_tab == 'predict' else '' }}">AI Predictor</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main>
+        {% if active_tab == 'home' %}
+            <div class="glass-card" style="max-width: 50vw; margin-left: 20px;">
+                <h2>Dashboard Overview</h2>
+                <p>Explore advanced football analytics, deep player profiles, head-to-head comparisons, and AI-powered performance indicators.</p>
+
+                <!-- Dataset Summary Stats -->
+                <div class="stats-grid">
+                    <div class="stat-box glass-box">
+                        <span>Players Tracked</span>
+                        <strong>{{ summary.total_players }}</strong>
+                    </div>
+                    <div class="stat-box glass-box">
+                        <span>World Cup Seasons</span>
+                        <strong>{{ summary.total_seasons }}</strong>
+                    </div>
+                    <div class="stat-box glass-box">
+                        <span>Player Records</span>
+                        <strong>{{ summary.total_records }}</strong>
+                    </div>
+                    <div class="stat-box glass-box">
+                        <span>Total Goals</span>
+                        <strong>{{ summary.total_goals }}</strong>
+                    </div>
+                    <div class="stat-box glass-box">
+                        <span>Avg Pass Completion</span>
+                        <strong>{{ summary.avg_pass_completion }}%</strong>
+                    </div>
+                </div>
+
+                <!-- Featured Top Scorer Highlight -->
+                <div class="glass-box" style="margin-top: 20px; padding: 15px; border-left: 4px solid var(--gold-primary);">
+                    <h3 style="margin: 0 0 5px 0; color: var(--gold-light);">🏆 All-Time Top Scorer Record</h3>
+                    <p style="margin: 0;"><strong>{{ top_scorer.player }}</strong> ({{ top_scorer.team }}) in {{ top_scorer.season }} with <strong>{{ top_scorer.goals }} goals</strong>.</p>
+                </div>
+
+                <!-- Visual Charts Section -->
+                <div style="display: flex; gap: 20px; margin-top: 25px; flex-wrap: wrap;">
+                    <div class="glass-box" style="flex: 1; min-width: 280px; padding: 15px;">
+                        <h4 style="text-align: center; color: var(--gold-light); margin-top: 0;">Average Per 90 Metrics</h4>
+                        <canvas id="dashboardChart" style="max-height: 220px;"></canvas>
+                    </div>
+                    <div class="glass-box" style="flex: 1; min-width: 280px; padding: 15px;">
+                        <h4 style="text-align: center; color: var(--gold-light); margin-top: 0;">Position Breakdown</h4>
+                        <canvas id="positionChart" style="max-height: 220px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <script id="per90-labels" type="application/json">{{ per90_labels | tojson }}</script>
+            <script id="per90-values" type="application/json">{{ per90_values | tojson }}</script>
+            <script id="position-labels" type="application/json">{{ position_labels | tojson }}</script>
+            <script id="position-values" type="application/json">{{ position_values | tojson }}</script>
+            <script>
+                const per90Labels = JSON.parse(document.getElementById('per90-labels').textContent);
+                const per90Values = JSON.parse(document.getElementById('per90-values').textContent);
+                const positionLabels = JSON.parse(document.getElementById('position-labels').textContent);
+                const positionValues = JSON.parse(document.getElementById('position-values').textContent);
+                const per90Ctx = document.getElementById('dashboardChart').getContext('2d');
+                new Chart(per90Ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: per90Labels,
+                        datasets: [{
+                            label: 'Average per 90m',
+                            data: per90Values,
+                            backgroundColor: 'rgba(212, 175, 55, 0.7)',
+                            borderColor: 'rgba(212, 175, 55, 1)',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false } } }
+                    }
+                });
+
+                const posCtx = document.getElementById('positionChart').getContext('2d');
+                new Chart(posCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: positionLabels,
+                        datasets: [{
+                            data: positionValues,
+                            backgroundColor: ['#d4af37', '#b8860b', '#daa520', '#fff8dc', '#cd853f']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
+                    }
+                });
+            </script>
+
+        {% elif active_tab == 'description' %}
+            <div class="glass-card">
+                <h2>Player Profile & Statistics</h2>
+                <form method="GET" action="/description">
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                        <div style="flex: 2; min-width: 220px;">
+                            <label for="player">Player Name:</label>
+                            <input type="text" name="player" id="player" list="players-datalist"
+                                   value="{{ selected_player }}" placeholder="Start typing player name..."
+                                   required class="glass-input" autocomplete="off">
+                            <datalist id="players-datalist">
+                                {% for p in players %}
+                                    <option value="{{ p }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        {% if player_seasons and player_seasons|length > 1 %}
+                            <div style="flex: 1; min-width: 150px;">
+                                <label for="season">World Cup Season:</label>
+                                <select name="season" id="season" class="glass-input">
+                                    {% for s in player_seasons %}
+                                        <option value="{{ s }}" {{ 'selected' if selected_season == s|string else '' }}>{{ s }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <button type="submit" class="btn">View Profile</button>
+                        </div>
+                    </div>
+                </form>
+
+                {% if player_data %}
+                    <div class="glass-box" style="margin-top: 25px; padding: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; margin-bottom: 20px;">
+                            <div>
+                                <h3 style="margin: 0; color: var(--gold-light); font-size: 1.8rem;">{{ player_data.player }}</h3>
+                                <p style="margin: 5px 0 0 0; opacity: 0.8;">Team: <strong>{{ player_data.team }}</strong> | Season: <strong>{{ player_data.season_name }}</strong> | Position: <strong>{{ player_data.get('position', 'N/A') }}</strong></p>
+                            </div>
+                            <div style="background: rgba(212,175,55,0.2); padding: 10px 20px; border-radius: 8px; border: 1px solid var(--gold-primary);">
+                                <span style="font-size: 0.9rem; display: block; text-transform: uppercase;">Matches Played</span>
+                                <strong style="font-size: 1.4rem;">{{ player_data.matches_played }}</strong>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                            <div class="glass-box" style="padding: 15px; text-align: center;">
+                                <span style="opacity: 0.8; font-size: 0.9rem;">Goals Scored</span>
+                                <strong style="display: block; font-size: 1.5rem; color: var(--gold-light); margin-top: 5px;">{{ player_data.goals }}</strong>
+                            </div>
+                            <div class="glass-box" style="padding: 15px; text-align: center;">
+                                <span style="opacity: 0.8; font-size: 0.9rem;">Expected Goals (xG)</span>
+                                <strong style="display: block; font-size: 1.5rem; color: var(--gold-light); margin-top: 5px;">{{ "%.2f"|format(player_data.xg|float) }}</strong>
+                            </div>
+                            <div class="glass-box" style="padding: 15px; text-align: center;">
+                                <span style="opacity: 0.8; font-size: 0.9rem;">Total Shots</span>
+                                <strong style="display: block; font-size: 1.5rem; color: var(--gold-light); margin-top: 5px;">{{ player_data.shots }}</strong>
+                            </div>
+                            <div class="glass-box" style="padding: 15px; text-align: center;">
+                                <span style="opacity: 0.8; font-size: 0.9rem;">Pass Completion %</span>
+                                <strong style="display: block; font-size: 1.5rem; color: var(--gold-light); margin-top: 5px;">{{ "%.1f"|format(player_data.pass_completion_pct|float) }}%</strong>
+                            </div>
+                            <div class="glass-box" style="padding: 15px; text-align: center;">
+                                <span style="opacity: 0.8; font-size: 0.9rem;">Tackles per 90</span>
+                                <strong style="display: block; font-size: 1.5rem; color: var(--gold-light); margin-top: 5px;">{{ "%.2f"|format(player_data.tackles_p90|float) }}</strong>
+                            </div>
+                            <div class="glass-box" style="padding: 15px; text-align: center;">
+                                <span style="opacity: 0.8; font-size: 0.9rem;">Interceptions per 90</span>
+                                <strong style="display: block; font-size: 1.5rem; color: var(--gold-light); margin-top: 5px;">{{ "%.2f"|format(player_data.interceptions_p90|float) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                {% elif selected_player %}
+                    <p style="margin-top: 20px; color: #ff6b6b;">Player "{{ selected_player }}" not found in database.</p>
+                {% endif %}
+            </div>
+
+        {% elif active_tab == 'comparison' %}
+            <div class="glass-card">
+                <h2>Head-to-Head Comparison</h2>
+                <form method="POST" action="/comparison">
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label>Player 1:</label>
+                            <select name="player1" required class="glass-input">
+                                <option value="">-- Select --</option>
+                                {% for p in players %}
+                                    <option value="{{ p }}" {{ 'selected' if p1 and p1.player == p else '' }}>{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label>Player 2:</label>
+                            <select name="player2" required class="glass-input">
+                                <option value="">-- Select --</option>
+                                {% for p in players %}
+                                    <option value="{{ p }}" {{ 'selected' if p2 and p2.player == p else '' }}>{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" style="margin-top: 20px;" class="btn">Compare Metrics</button>
+                </form>
+
+                {% if p1 and p2 %}
+                    {% if comparison_report %}
+                        <div class="glass-box" style="margin-top: 25px; padding: 18px; border-left: 4px solid var(--gold-primary);">
+                            <h3 style="margin-top: 0; color: var(--gold-light); font-size: 1.2rem;">📊 Defensive & Tactical Comparison Brief</h3>
+                            <p style="margin: 0; line-height: 1.6;">{{ comparison_report }}</p>
+                        </div>
+                    {% endif %}
+
+                    <div style="display: flex; justify-content: space-between; margin-top: 25px; flex-wrap: wrap; gap: 15px;">
+                        <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 12px; width: 48%; min-width: 280px;" class="glass-box">
+                            <h3 style="margin-top: 0; color: var(--gold-light);">{{ p1.player }}</h3>
+                            <p>Team: <strong>{{ p1.get('team', 'N/A') }}</strong> | Season: <strong>{{ p1.get('season_name', 'N/A') }}</strong></p>
+                            <ul style="padding-left: 20px; line-height: 1.8;">
+                                <li>Goals: <strong>{{ p1.goals }}</strong></li>
+                                <li>Expected Goals (xG): <strong>{{ "%.2f"|format(p1.xg|float) }}</strong></li>
+                                <li>Shots per 90: <strong>{{ "%.2f"|format(p1.shots_p90|float) }}</strong></li>
+                                <li>Pass Completion: <strong>{{ "%.1f"|format(p1.pass_completion_pct|float) }}%</strong></li>
+                                <li>Tackles per 90: <strong>{{ "%.2f"|format(p1.tackles_p90|float) }}</strong></li>
+                                <li>Interceptions per 90: <strong>{{ "%.2f"|format(p1.interceptions_p90|float) }}</strong></li>
+                                <li>Recoveries per 90: <strong>{{ "%.2f"|format(p1.recoveries_p90|float) }}</strong></li>
+                            </ul>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 12px; width: 48%; min-width: 280px;" class="glass-box">
+                            <h3 style="margin-top: 0; color: var(--gold-light);">{{ p2.player }}</h3>
+                            <p>Team: <strong>{{ p2.get('team', 'N/A') }}</strong> | Season: <strong>{{ p2.get('season_name', 'N/A') }}</strong></p>
+                            <ul style="padding-left: 20px; line-height: 1.8;">
+                                <li>Goals: <strong>{{ p2.goals }}</strong></li>
+                                <li>Expected Goals (xG): <strong>{{ "%.2f"|format(p2.xg|float) }}</strong></li>
+                                <li>Shots per 90: <strong>{{ "%.2f"|format(p2.shots_p90|float) }}</strong></li>
+                                <li>Pass Completion: <strong>{{ "%.1f"|format(p2.pass_completion_pct|float) }}%</strong></li>
+                                <li>Tackles per 90: <strong>{{ "%.2f"|format(p2.tackles_p90|float) }}</strong></li>
+                                <li>Interceptions per 90: <strong>{{ "%.2f"|format(p2.interceptions_p90|float) }}</strong></li>
+                                <li>Recoveries per 90: <strong>{{ "%.2f"|format(p2.recoveries_p90|float) }}</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+        {% elif active_tab == 'replacement' %}
+            <div class="glass-card">
+                <h2>Retirement Successor Finder</h2>
+                <p>Select a retiring legend to discover statistically similar successor replacements using machine learning clustering.</p>
+                
+                <form method="POST" action="/replacement">
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; margin-top: 15px;">
+                        <div style="flex: 2; min-width: 250px;">
+                            <label>Select Retiring Player:</label>
+                            <select name="retiring_player" required class="glass-input">
+                                <option value="">-- Choose Player --</option>
+                                {% for p in players %}
+                                    <option value="{{ p }}" {{ 'selected' if selected_retiring == p else '' }}>{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn">Find Successors</button>
+                        </div>
+                    </div>
+                </form>
+
+                {% if selected_retiring and retiring_data %}
+                    <div class="glass-box" style="margin-top: 25px; padding: 20px;">
+                        <h3 style="margin-top: 0; color: var(--gold-light);">Retiring Profile: {{ retiring_data.player }}</h3>
+                        <p>Team: <strong>{{ retiring_data.team }}</strong> | Position: <strong>{{ retiring_data.get('position', 'N/A') }}</strong> | WC Season: <strong>{{ retiring_data.season_name }}</strong></p>
+                    </div>
+                {% endif %}
+
+                {% if successor_report %}
+                    <div class="glass-box" style="margin-top: 20px; padding: 18px; border-left: 4px solid var(--gold-primary);">
+                        <h3 style="margin-top: 0; color: var(--gold-light); font-size: 1.2rem;">🔍 Retirement Successor Report</h3>
+                        <p style="margin: 0; line-height: 1.6;">{{ successor_report | safe }}</p>
+                    </div>
+                {% endif %}
+
+                {% if replacements %}
+                    <h3 style="margin-top: 25px; color: var(--gold-light);">Top 5 Tactical Replacements</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-top: 15px;">
+                        {% for rep in replacements %}
+                            <div class="glass-box" style="padding: 15px; text-align: center;">
+                                <span style="font-size: 0.85rem; color: var(--gold-light); text-transform: uppercase; letter-spacing: 1px;">Match: {{ rep.similarity }}</span>
+                                <h4 style="margin: 8px 0 5px 0; font-size: 1.2rem;">{{ rep.player }}</h4>
+                                <p style="margin: 0; font-size: 0.9rem; opacity: 0.8;">{{ rep.team }}</p>
+                                <span style="display: inline-block; margin-top: 8px; font-size: 0.8rem; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px;">{{ rep.position }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+        {% elif active_tab == 'predict' %}
+            <div class="glass-card" style="max-width: 850px; margin: auto;">
+                <h2>AI Performance Predictor</h2>
+                <p>Provide a Player Name and Country to auto-fetch historical parameters, or adjust numerical metrics manually to run the ML regression model.</p>
+                
+                <form method="POST" action="/predict">
+                    <!-- Player & Country Selection Row -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px;">
+                        <div>
+                            <label>Player Name (Optional):</label>
+                            <input type="text" name="player_name" list="predict-players" value="{{ form_data.player_name if form_data else '' }}" placeholder="e.g. Lionel Messi" class="glass-input" autocomplete="off">
+                            <datalist id="predict-players">
+                                {% for p in players %}
+                                    <option value="{{ p }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div>
+                            <label>Country / Team (Optional):</label>
+                            <input type="text" name="country" list="predict-countries" value="{{ form_data.country if form_data else '' }}" placeholder="e.g. Argentina" class="glass-input" autocomplete="off">
+                            <datalist id="predict-countries">
+                                {% for c in countries %}
+                                    <option value="{{ c }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left;">
+                        <div>
+                            <label>Matches Played:</label>
+                            <input type="number" step="any" name="matches_played" value="{{ form_data.matches_played if form_data else '5' }}" required class="glass-input">
+                        </div>
+                        <div>
+                            <label>Minutes Played:</label>
+                            <input type="number" step="any" name="minutes_played" value="{{ form_data.minutes_played if form_data else '450' }}" required class="glass-input">
+                        </div>
+                        <div>
+                            <label>Goals:</label>
+                            <input type="number" step="any" name="goals" value="{{ form_data.goals if form_data else '2' }}" required class="glass-input">
+                        </div>
+                        <div>
+                            <label>Shots:</label>
+                            <input type="number" step="any" name="shots" value="{{ form_data.shots if form_data else '10' }}" required class="glass-input">
+                        </div>
+                        <div>
+                            <label>Passes:</label>
+                            <input type="number" step="any" name="passes" value="{{ form_data.passes if form_data else '200' }}" required class="glass-input">
+                        </div>
+                        <div>
+                            <label>Completed Passes:</label>
+                            <input type="number" step="any" name="completed_passes" value="{{ form_data.completed_passes if form_data else '170' }}" required class="glass-input">
+                        </div>
+                        <div>
+                            <label>Key Passes:</label>
+                            <input type="number" step="any" name="key_passes" value="{{ form_data.key_passes if form_data else '5' }}" required class="glass-input">
+                        </div>
+                        <div>
+                            <label>Tackles:</label>
+                            <input type="number" step="any" name="tackles" value="{{ form_data.tackles if form_data else '8' }}" required class="glass-input">
+                        </div>
+                        <div>
+                            <label>Interceptions:</label>
+                            <input type="number" step="any" name="interceptions" value="{{ form_data.interceptions if form_data else '4' }}" required class="glass-input">
+                        </div>
+                        <div>
+                            <label>Recoveries:</label>
+                            <input type="number" step="any" name="recoveries" value="{{ form_data.recoveries if form_data else '20' }}" required class="glass-input">
+                        </div>
+                    </div>
+                    <button type="submit" style="margin-top: 25px; width: 100%;" class="btn">Run AI Prediction</button>
+                </form>
+
+                {% if prediction_result %}
+                    <div class="glass-box" style="margin-top: 25px; padding: 20px; text-align: center;">
+                        <h3 style="color: var(--gold-light); margin-top: 0;">⚡ AI Prediction Results</h3>
+                        <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
+                            <div>
+                                <span style="font-size: 0.9rem; opacity: 0.8; display: block;">Predicted Expected Goals (xG)</span>
+                                <strong style="font-size: 2rem; color: var(--gold-light);">{{ prediction_result.xg }}</strong>
+                            </div>
+                            <div>
+                                <span style="font-size: 0.9rem; opacity: 0.8; display: block;">Classified Position Role</span>
+                                <strong style="font-size: 2rem; color: var(--gold-light);">{{ prediction_result.position }}</strong>
+                            </div>
+                        </div>
+
+                        {% if prediction_result.report %}
+                            <div style="margin-top: 20px; text-align: left; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid var(--gold-primary);">
+                                <h4 style="margin: 0 0 8px 0; color: var(--gold-light); font-size: 1.1rem;">💡 AI Narrative Performance Report</h4>
+                                <p style="margin: 0; line-height: 1.6;">{{ prediction_result.report | safe }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </main>
+
+    <!-- JavaScript to automatically hide the loading screen when video finishes -->
+    <script>
+        const introVideo = document.getElementById('intro-video');
+        const loadingScreen = document.getElementById('loading-screen');
+
+        introVideo.addEventListener('ended', function() {
+            loadingScreen.classList.add('fade-out');
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 500);
+        });
+    </script>
+</body>
+</html>
