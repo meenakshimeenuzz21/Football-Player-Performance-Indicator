@@ -123,6 +123,7 @@ http://127.0.0.1:5000
 
 ## 📂 Project Structure
 
+```text
 Football_Player_Performance_Indicator/
 │
 ├── static/
@@ -144,6 +145,7 @@ Football_Player_Performance_Indicator/
 ├── world_cup_player_stats.csv
 ├── xg_model_bundle.pkl
 └── README.md
+```
 
 
 ## 🎯 Project Objective
