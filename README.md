@@ -121,7 +121,7 @@ Navigate to:
 http://127.0.0.1:5000
 
 
-📂 Project Structure
+## 📂 Project Structure
 
 Football_Player_Performance_Indicator/
 │
@@ -146,10 +146,10 @@ Football_Player_Performance_Indicator/
 └── README.md
 
 
-🎯 Project Objective
+## 🎯 Project Objective
 The main objective of the Football Player Performance Indicator is to build a data-driven platform that helps analyze football players and generate meaningful insights from player statistics.
 
-The project combines:
+## The project combines:
 Data Analysis
 Machine Learning
 Statistical Insights
@@ -157,7 +157,7 @@ Web Development
 Interactive Visualization
 to create an accessible football analytics platform.
 
-🔮 Future Scope
+## 🔮 Future Scope
 Integration with live football data
 Real-time player performance tracking
 Support for additional football leagues
@@ -167,10 +167,10 @@ Cloud deployment
 More advanced player comparison features
 
 
-👩‍💻 Project Type
+## 👩‍💻 Project Type
 Data Science and Analytics Project
 
-Developed Using
+## Developed Using
 Python
 Flask 
 Machine Learning 
