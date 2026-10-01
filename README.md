@@ -137,12 +137,12 @@ Football_Player_Performance_Indicator/
 │   └── settings.json
 │
 ├── app.py
+├── fifa_world_cup.glb
 ├── knn_position_bundle.pkl
 ├── position_classifier.pkl
 ├── requirements.txt
 ├── world_cup_player_stats.csv
 ├── xg_model_bundle.pkl
-├── fifa_world_cup.glb
 └── README.md
 
 
