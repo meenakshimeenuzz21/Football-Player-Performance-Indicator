@@ -124,27 +124,25 @@ http://127.0.0.1:5000
 ## 📂 Project Structure
 
 ```text
-Football_Player_Performance_Indicator/
+Football_Player_Performance/
 │
 ├── static/
-│   ├── fifa_world_cup.glb
-│   ├── loading.mp4
-│   └── style.css
+│   ├── fifa_world_cup.glb      
+│   ├── loading.mp4            
+│   └── style.css               
 │
 ├── templates/
-│   └── index.html
+│   └── index.html         
 │
-├── .vscode/
-│   └── settings.json
-│
-├── app.py
-├── fifa_world_cup.glb
-├── knn_position_bundle.pkl
-├── position_classifier.pkl
-├── requirements.txt
-├── world_cup_player_stats.csv
-├── xg_model_bundle.pkl
-└── README.md
+├── venv/                       
+├── app.py                     
+├── fifa_world_cup.glb          
+├── knn_position_bundle.pkl     
+├── loading.mp4                 
+├── position_classifier.pkl      
+├── requirements.txt            
+├── world_cup_player_stats.csv   
+└── xg_model_bundle.pkl         
 ```
 
 
