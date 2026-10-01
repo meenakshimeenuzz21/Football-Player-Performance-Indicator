@@ -1,6 +1,6 @@
 # ⚽ Football Player Performance Indicator
 
-An advanced football analytics web application developed to analyze player performance using data analysis and machine learning. The application provides player profiles, player comparisons, player replacement recommendations, Expected Goals (xG) prediction, and player position prediction through an interactive web interface.
+An advanced football analytics web application developed to analyze player performance using data analysis and machine learning. The application provides player profiles, perform head-to-head comparisons, player replacement recommendations, Expected Goals (xG) prediction, and player position prediction through an interactive web interface.
 
 ---
 
