@@ -147,28 +147,29 @@ Football_Player_Performance/
 
 
 ## 🎯 Project Objective
-The main objective of the Football Player Performance Indicator is to build a data-driven platform that helps analyze football players and generate meaningful insights from player statistics.
+The main objective of the Football Player Performance Indicator is to provide a data-driven platform for analyzing football players and generating useful insights from player statistics.
+
+The application combines data analysis, machine learning, and web development to create an interactive football analytics platform.
 
 ## The project combines:
-Data Analysis
-Machine Learning
-Statistical Insights
-Web Development
-Interactive Visualization
+. Data Analysis
+. Machine Learning
+. Statistical Insights
+. Web Development
+. Interactive Visualization
+
 to create an accessible football analytics platform.
 
 ## 🔮 Future Scope
-Integration with live football data
-Real-time player performance tracking
-Support for additional football leagues
-Advanced player recommendation systems
-Improved machine learning models
-Cloud deployment
-More advanced player comparison features
-
+- Integration of live football data
+- Real-time player performance analysis
+- Advanced player recommendation systems
+- Improved machine learning models
+- Cloud deployment
+- Integration with additional football leagues and competitions
 
 ## 👩‍💻 Project Type
-Data Science and Analytics Project
+**Data Science and Analytics Project**
 
 ## Developed Using
 - Python
