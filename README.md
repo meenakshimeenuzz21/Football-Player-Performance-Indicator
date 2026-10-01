@@ -152,11 +152,11 @@ The main objective of the Football Player Performance Indicator is to provide a 
 The application combines data analysis, machine learning, and web development to create an interactive football analytics platform.
 
 ## The project combines:
-. Data Analysis
-. Machine Learning
-. Statistical Insights
-. Web Development
-. Interactive Visualization
+- Data Analysis
+- Machine Learning
+- Statistical Insights
+- Web Development
+- Interactive Visualization
 
 to create an accessible football analytics platform.
 
