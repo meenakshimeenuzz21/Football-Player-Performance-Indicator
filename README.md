@@ -98,6 +98,7 @@ Follow these steps to run the project on your local machine.
 
 ### 1. Clone the Repository
 git clone https://github.com/meenakshimeenuzz21/Football-Player-Performance-Indicator.git
+
 cd Football-Player-Performance-Indicator
 
 
