@@ -171,12 +171,12 @@ More advanced player comparison features
 Data Science and Analytics Project
 
 ## Developed Using
-Python
-Flask 
-Machine Learning 
-Pandas
-NumPy 
-Scikit-learn 
-HTML 
-CSS 
-JavaScript
+- Python
+- Flask
+- Machine Learning
+- Pandas
+- NumPy
+- Scikit-learn
+- HTML
+- CSS
+- JavaScript
